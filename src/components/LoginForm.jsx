@@ -7,48 +7,44 @@ import { useNavigate } from 'react-router-dom'
 import "../styles/RegisterForm.css"
 
 const validationSchema = Yup.object({
-    name: Yup.string().required("El nombre es obligatorio"),
-    email: Yup.string().email("Email invalido").required('El email es obligatorio'),
-    password: Yup.string().required('La contraseña es obligatoria')
+    email: Yup.string().email("Email inválido").required("El email es obligatorio"),
+    password: Yup.string().required("La contraseña es obligatoria")
 })
 
-export default function RegisterForm() {
+export default function LoginForm() {
     const navigate = useNavigate()
 
     const handleSubmit = async (values, { resetForm }) => {
         try {
-            const response = await fetch('http://localhost:5000/register', {
+            const response = await fetch('http://localhost:5000/login', {
                 method: 'POST',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values)
             })
             if (response.ok) {
-                toast.success("Usuario registrado con exito")
+                const data = await response.json()
+                localStorage.setItem('user', JSON.stringify(data))
+                toast.success("Inicio de sesión exitoso")
                 resetForm()
-                setTimeout(() => navigate('/'), 2000)
+                setTimeout(() => navigate('/'), 1500)
             } else {
-                toast.error("Hubo un erro al registrar el usuario")
+                toast.error("Credenciales inválidas o usuario no encontrado")
             }
         } catch (error) {
-            toast.error("hubo un error con el servidor", error)
+            toast.error("Hubo un error con el servidor")
         }
     }
 
     return (
         <div className='register-container'>
-            <h2>Crear cuenta</h2>
+            <h2>Iniciar sesión</h2>
             <Formik
-                initialValues={{ name: '', email: '', password: '', role: 'usuario' }}
+                initialValues={{ email: '', password: '' }}
                 validationSchema={validationSchema}
                 onSubmit={handleSubmit}
             >
                 {({ isSubmitting }) => (
                     <Form className='register-form'>
-                        <div className='form-field'>
-                            <label>Nombre</label>
-                            <Field as={InputText} id='name' name='name' />
-                            <ErrorMessage name='name' component='small' className='error' />
-                        </div>
                         <div className='form-field'>
                             <label>Email</label>
                             <Field as={InputText} id='email' name='email' />
@@ -60,7 +56,7 @@ export default function RegisterForm() {
                             <ErrorMessage name='password' component='small' className='error' />
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <Button type='submit' label={isSubmitting ? "Registrando..." : 'Registrarse'} />
+                            <Button type='submit' label={isSubmitting ? "Ingresando..." : "Iniciar sesión"} className='p-button-secondary' />
                             <Button type='button' label='Cancelar' className='p-button-secondary' onClick={() => navigate('/')} />
                         </div>
                     </Form>

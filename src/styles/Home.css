@@ -6,7 +6,9 @@
   height: 100vh;
   gap: 2rem;
   width: 100%;
-  background: linear-gradient(135deg, #a0c4ff, #caffbf);
+  background: linear-gradient(135deg, #89f7fe, #66a6ff);
+  color: #1a1a1a;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .home-buttons {

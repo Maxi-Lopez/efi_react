@@ -2,9 +2,17 @@
   max-width: 400px;
   margin: 5rem auto;
   padding: 2rem;
-  background-color: #ffffffcc;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  background-color: #ffffffdd;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.register-container h2 {
+  color: #1a1a1a;  
+  margin-bottom: 1.5rem;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -20,7 +28,24 @@
   text-align: left;
 }
 
+.form-field label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #333;
+}
+
 .error {
-  color: #d32f2f;
+  color: #e63946;
   font-size: 0.8rem;
+}
+
+.p-button {
+  background-color: #4facfe;
+  border: none;
+  color: white;
+}
+
+.p-button.p-button-secondary {
+  background-color: #43e97b;
+  color: white;
 }

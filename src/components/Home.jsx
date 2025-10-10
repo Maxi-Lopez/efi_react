@@ -1,9 +1,9 @@
-import { Button } from "primereact/button";
-import { useNavigate } from "react-router-dom";
-import "../styles/Home.css";
+import { Button } from "primereact/button"
+import { useNavigate } from "react-router-dom"
+import "../styles/Home.css"
 
 export default function Home() {
-    const navigate = useNavigate();
+    const navigate = useNavigate()
 
     return (
         <div className="home-container">
@@ -13,9 +13,9 @@ export default function Home() {
                 <Button
                     label="Iniciar sesión"
                     className="p-button-secondary"
-                    onClick={() => alert("Funcionalidad próximamente")}
+                    onClick={() => navigate("/loguearse")}
                 />
             </div>
         </div>
-    );
+    )
 }
