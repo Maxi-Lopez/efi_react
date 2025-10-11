@@ -26,7 +26,7 @@ export default function LoginForm() {
                 localStorage.setItem('user', JSON.stringify(data))
                 toast.success("Inicio de sesión exitoso")
                 resetForm()
-                setTimeout(() => navigate('/'), 1500)
+                setTimeout(() => navigate('/dashboard'), 1500)
             } else {
                 toast.error("Credenciales inválidas o usuario no encontrado")
             }

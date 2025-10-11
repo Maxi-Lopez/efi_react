@@ -30,7 +30,8 @@ export default function RegisterForm() {
                 toast.error("Hubo un erro al registrar el usuario")
             }
         } catch (error) {
-            toast.error("hubo un error con el servidor", error)
+            toast.error(`Hubo un error con el servidor: ${error.message}`)
+
         }
     }
 
