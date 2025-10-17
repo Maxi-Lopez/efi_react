@@ -1,3 +1,4 @@
+// src/components/RegisterForm.jsx
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import * as Yup from 'yup'
 import { Button } from 'primereact/button'
@@ -6,10 +7,11 @@ import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import "../styles/RegisterForm.css"
 
+// Validaciones
 const validationSchema = Yup.object({
     name: Yup.string().required("El nombre es obligatorio"),
-    email: Yup.string().email("Email invalido").required('El email es obligatorio'),
-    password: Yup.string().required('La contraseña es obligatoria')
+    email: Yup.string().email("Email inválido").required("El email es obligatorio"),
+    password: Yup.string().required("La contraseña es obligatoria")
 })
 
 export default function RegisterForm() {
@@ -17,21 +19,28 @@ export default function RegisterForm() {
 
     const handleSubmit = async (values, { resetForm }) => {
         try {
-            const response = await fetch('http://localhost:5000/register', {
+            const response = await fetch('http://localhost:5000/api/register', {
                 method: 'POST',
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values)
+                body: JSON.stringify({
+                    name: values.name,
+                    email: values.email,
+                    password: values.password,
+                    role: "user" // el endpoint solo permite crear usuarios normales
+                })
             })
+
             if (response.ok) {
-                toast.success("Usuario registrado con exito")
+                const data = await response.json()
+                toast.success(`Usuario registrado correctamente (ID: ${data.user_id})`)
                 resetForm()
-                setTimeout(() => navigate('/'), 2000)
+                setTimeout(() => navigate('/'), 1500)
             } else {
-                toast.error("Hubo un erro al registrar el usuario")
+                const errData = await response.json()
+                toast.error(`Error al registrar: ${errData.error || 'Revisar los datos'}`)
             }
         } catch (error) {
-            toast.error(`Hubo un error con el servidor: ${error.message}`)
-
+            toast.error(`Error de servidor: ${error.message}`)
         }
     }
 
@@ -39,7 +48,7 @@ export default function RegisterForm() {
         <div className='register-container'>
             <h2>Crear cuenta</h2>
             <Formik
-                initialValues={{ name: '', email: '', password: '', role: 'usuario' }}
+                initialValues={{ name: '', email: '', password: '' }}
                 validationSchema={validationSchema}
                 onSubmit={handleSubmit}
             >
@@ -47,22 +56,22 @@ export default function RegisterForm() {
                     <Form className='register-form'>
                         <div className='form-field'>
                             <label>Nombre</label>
-                            <Field as={InputText} id='name' name='name' />
+                            <Field as={InputText} name='name' />
                             <ErrorMessage name='name' component='small' className='error' />
                         </div>
                         <div className='form-field'>
                             <label>Email</label>
-                            <Field as={InputText} id='email' name='email' />
+                            <Field as={InputText} name='email' />
                             <ErrorMessage name='email' component='small' className='error' />
                         </div>
                         <div className='form-field'>
                             <label>Contraseña</label>
-                            <Field as={InputText} id='password' name='password' type='password' />
+                            <Field as={InputText} name='password' type='password' />
                             <ErrorMessage name='password' component='small' className='error' />
                         </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <Button type='submit' label={isSubmitting ? "Registrando..." : 'Registrarse'} />
-                            <Button type='button' label='Cancelar' className='p-button-secondary' onClick={() => navigate('/')} />
+                        <div className='form-buttons' style={{ display: 'flex', gap: '1rem' }}>
+                            <Button type='submit' label={isSubmitting ? "Registrando..." : "Registrarse"} />
+                            <Button type='button' label="Cancelar" className='p-button-secondary' onClick={() => navigate('/')} />
                         </div>
                     </Form>
                 )}

@@ -1,14 +1,14 @@
+// src/components/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 export default function ProtectedRoute({ children }) {
-    const user = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
 
-    // Si no hay usuario logueado, redirige al login
-    if (!user) {
+    if (!token) {
+        // Si no hay token, redirige a la página de inicio
         return <Navigate to="/" replace />;
     }
 
-    // Si hay usuario, renderiza los hijos
     return children;
 }
