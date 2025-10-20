@@ -5,12 +5,12 @@ import { Button } from 'primereact/button'
 import { InputText } from 'primereact/inputtext'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
+import api from '../api'  
 import "../styles/RegisterForm.css"
 
-// Validación de campos
 const validationSchema = Yup.object({
-    email: Yup.string().email("Email inválido").required("El email es obligatorio"),
-    password: Yup.string().required("La contraseña es obligatoria")
+    email: Yup.string().email("Invalid email").required("Email is required"),
+    password: Yup.string().required("Password is required")
 })
 
 export default function LoginForm() {
@@ -18,31 +18,27 @@ export default function LoginForm() {
 
     const handleSubmit = async (values, { resetForm }) => {
         try {
-            const response = await fetch('http://localhost:5000/api/login', {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values)
+            const data = await api.post('/login', {
+                email: values.email,
+                password: values.password
             })
 
-            if (response.ok) {
-                const data = await response.json()
-                // Guardamos el token JWT en localStorage
-                localStorage.setItem('token', data.access_token)
-                toast.success("Inicio de sesión exitoso")
-                resetForm()
-                setTimeout(() => navigate('/dashboard'), 1500)
-            } else {
-                const errData = await response.json()
-                toast.error(errData.error || "Credenciales inválidas")
-            }
+            const token = data.access_token || data.token;
+            localStorage.setItem('token', token);
+            
+            toast.success("Login successful")
+            resetForm()
+            
+            setTimeout(() => navigate('/dashboard'), 1500)
+            
         } catch (error) {
-            toast.error(`Error de servidor: ${error.message}`)
+            toast.error(`Error logging in: ${error.message}`)
         }
     }
 
     return (
         <div className='register-container'>
-            <h2>Iniciar sesión</h2>
+            <h2>Login</h2>
             <Formik
                 initialValues={{ email: '', password: '' }}
                 validationSchema={validationSchema}
@@ -56,13 +52,23 @@ export default function LoginForm() {
                             <ErrorMessage name='email' component='small' className='error' />
                         </div>
                         <div className='form-field'>
-                            <label>Contraseña</label>
+                            <label>Password</label>
                             <Field as={InputText} name='password' type='password' />
                             <ErrorMessage name='password' component='small' className='error' />
                         </div>
                         <div className='form-buttons' style={{ display: 'flex', gap: '1rem' }}>
-                            <Button type='submit' label={isSubmitting ? "Ingresando..." : "Iniciar sesión"} className='p-button-secondary' />
-                            <Button type='button' label='Cancelar' className='p-button-secondary' onClick={() => navigate('/')} />
+                            <Button 
+                                type='submit' 
+                                label={isSubmitting ? "Logging in..." : "Login"} 
+                                className='p-button-secondary' 
+                                disabled={isSubmitting}
+                            />
+                            <Button 
+                                type='button' 
+                                label='Cancel' 
+                                className='p-button-secondary' 
+                                onClick={() => navigate('/')} 
+                            />
                         </div>
                     </Form>
                 )}

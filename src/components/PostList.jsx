@@ -43,7 +43,7 @@ export default function PostsList() {
     }));
   };
 
-  // Crear comentario
+   
   const submitComment = async (postId) => {
     if (!token) {
       toast.error("Debes iniciar sesión para comentar");
@@ -75,7 +75,7 @@ export default function PostsList() {
     }
   };
 
-  // Eliminar post
+   
   const deletePost = async (postId) => {
     if (!token) return toast.error("No autorizado");
 
@@ -95,7 +95,7 @@ export default function PostsList() {
     }
   };
 
-  // Eliminar comentario
+  
   const deleteComment = async (commentId) => {
     if (!token) return toast.error("No autorizado");
 

@@ -1,21 +1,20 @@
-import { Button } from "primereact/button"
-import { useNavigate } from "react-router-dom"
-import "../styles/Home.css"
+// src/components/Home.jsx
+import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Home() {
-    const navigate = useNavigate()
-
-    return (
-        <div className="home-container">
-            <h1>Bienvenido</h1>
-            <div className="home-buttons">
-                <Button label="Registrarse" onClick={() => navigate("/registrarse")} />
-                <Button
-                    label="Iniciar sesión"
-                    className="p-button-secondary"
-                    onClick={() => navigate("/loguearse")}
-                />
-            </div>
-        </div>
-    )
+  return (
+    <div style={{ padding: "2rem" }}>
+      <h1>Welcome to Home</h1>
+      <p>Select an option:</p>
+      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+        <Link to="/register">
+          <button>Register</button>
+        </Link>
+        <Link to="/login">
+          <button>Login</button>
+        </Link>
+      </div>
+    </div>
+  );
 }
