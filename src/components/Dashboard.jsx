@@ -8,22 +8,31 @@ import api from "../api";
 
 export default function Dashboard() {
   const [categories, setCategories] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    loadUser();
     loadCategories();
   }, []);
+
+  const loadUser = () => {
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+  };
 
   const loadCategories = async () => {
     try {
       const token = localStorage.getItem("token");
-      const data = await api.get("/categories", token);
-      
-      console.log("Response from /categories:", data);
-      
-      setCategories(data);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await api.get("/categories", { headers });
+      setCategories(response.data || response);
     } catch (error) {
       toast.error("Error loading categories");
       console.error("Error loading categories:", error);
@@ -32,7 +41,31 @@ export default function Dashboard() {
     }
   };
 
+  const loadPostsByCategory = async (categoryId) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/categories/${categoryId}/posts`);
+      setPosts(response.data || response);
+    } catch (error) {
+      toast.error("Error loading posts for this category");
+      console.error("Error loading posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    loadPostsByCategory(category.id);
+  };
+
   const handleCreatePost = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.warning("Please login to create a post");
+      navigate("/login");
+      return;
+    }
     if (!selectedCategory) {
       toast.warning("Please select a category first");
       return;
@@ -41,135 +74,195 @@ export default function Dashboard() {
   };
 
   const handleCreateCategory = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.warning("Please login to create a category");
+      navigate("/login");
+      return;
+    }
     navigate("/categories/create");
   };
 
-  const header = (
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-bold">Dashboard</h2>
-      <Button 
-        label="Create Category" 
-        icon="pi pi-plus" 
-        onClick={handleCreateCategory}
-      />
-    </div>
-  );
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    toast.success("Logged out successfully");
+  };
 
   if (loading) {
     return (
-      <div className="p-6">
-        {header}
-        <div className="text-center py-8">
-          <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem' }}></i>
-          <p className="mt-2">Loading categories...</p>
-        </div>
+      <div className="text-center mt-10">
+        <i className="pi pi-spin pi-spinner text-4xl"></i>
+        <p>Loading dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <Card header={header} className="shadow-lg">
-        <div className="grid">
-          <div className="col-12 md:col-8">
-            <h3 className="text-xl font-semibold mb-4">Select a Category</h3>
-            
-            {categories.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                <i className="pi pi-inbox text-4xl text-gray-400 mb-2"></i>
-                <p className="text-gray-500">No categories available</p>
-                <Button 
-                  label="Create First Category" 
-                  className="mt-3" 
-                  onClick={handleCreateCategory}
+    <div>
+      {/* Header fijo */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "white",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          zIndex: 1000,
+          padding: "1rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            maxWidth: "1200px",
+            margin: "0 auto",
+          }}
+        >
+          <h2 className="text-2xl font-bold">Dashboard</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {!user ? (
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <Button
+                  label="Register"
+                  className="p-button-outlined p-button-secondary"
+                  onClick={() => navigate("/register")}
+                />
+                <Button
+                  label="Login"
+                  className="p-button-success"
+                  onClick={() => navigate("/login")}
                 />
               </div>
             ) : (
-              <div className="grid gap-3">
-                {categories.map((category) => (
-                  <div 
-                    key={category.id}
-                    className={`p-4 border-round cursor-pointer transition-colors transition-duration-200 ${
-                      selectedCategory?.id === category.id 
-                        ? 'bg-blue-100 border-2 border-blue-500' 
-                        : 'bg-gray-100 border-1 border-gray-300 hover:bg-gray-200'
-                    }`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    <div className="flex align-items-center">
-                      <i className="pi pi-folder text-xl mr-3"></i>
-                      <div>
-                        <h4 className="font-bold mb-1">
-                          {category.name || `Category ${category.id}`}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          ID: {category.id}
-                        </p>
-                      </div>
-                      {selectedCategory?.id === category.id && (
-                        <i className="pi pi-check ml-auto text-green-500"></i>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                }}
+              >
+                <span className="font-medium text-gray-700">
+                  Hello, {user.username}
+                </span>
+                <Button
+                  icon="pi pi-sign-out"
+                  label="Logout"
+                  className="p-button-outlined p-button-danger p-button-sm"
+                  onClick={handleLogout}
+                />
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          <div className="col-12 md:col-4">
-            <div className="p-4 bg-gray-50 border-round">
-              <h4 className="font-bold mb-4">Actions</h4>
-              
-              <div className="flex flex-column gap-3">
-                <Button 
-                  label="Create Post in Selected Category" 
-                  icon="pi pi-plus" 
-                  disabled={!selectedCategory}
-                  onClick={handleCreatePost}
-                  className="w-full"
-                />
-                
-                <Button 
-                  label="Create New Category" 
-                  icon="pi pi-folder-plus" 
-                  className="p-button-outlined w-full"
+      {/* Contenido principal */}
+      <div style={{ marginTop: "100px", padding: "1.5rem" }}>
+        <Card className="shadow-lg">
+          <h3 className="text-xl font-semibold mb-4">Categories</h3>
+
+          {categories.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-gray-500">No categories available</p>
+              {user && (
+                <Button
+                  label="Create Category"
+                  icon="pi pi-folder-plus"
+                  className="mt-3"
                   onClick={handleCreateCategory}
                 />
-
-                <div className="mt-4 p-3 bg-blue-50 border-round">
-                  <h5 className="font-bold mb-2">Selected Category:</h5>
-                  {selectedCategory ? (
-                    <div className="flex align-items-center">
-                      <i className="pi pi-folder mr-2"></i>
-                      <span>{selectedCategory.name || `Category ${selectedCategory.id}`}</span>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-3 mb-4">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className={`p-3 border-round cursor-pointer transition-colors ${
+                    selectedCategory?.id === category.id
+                      ? "bg-blue-100 border-2 border-blue-500"
+                      : "bg-white border-1 border-gray-300 hover:bg-gray-100"
+                  }`}
+                  onClick={() => handleCategoryClick(category)}
+                >
+                  <div className="flex align-items-center justify-content-between">
+                    <div className="flex align-items-center gap-2">
+                      <i className="pi pi-folder"></i>
+                      <span>{category.name}</span>
                     </div>
-                  ) : (
-                    <span className="text-gray-500">None selected</span>
+                    {selectedCategory?.id === category.id && (
+                      <i className="pi pi-check text-green-500"></i>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Mostrar posts solo si se seleccionó una categoría */}
+          {selectedCategory && (
+            <div className="mt-6">
+              <h3 className="text-xl font-semibold mb-4">
+                Posts in "{selectedCategory.name}"
+              </h3>
+              {posts.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-gray-500">
+                    No posts in this category yet
+                  </p>
+                  {user && (
+                    <Button
+                      label="Create Post"
+                      icon="pi pi-plus"
+                      onClick={handleCreatePost}
+                      className="mt-3"
+                    />
                   )}
                 </div>
-              </div>
+              ) : (
+                <div className="grid gap-3">
+                  {posts.map((post) => (
+                    <Card key={post.id} className="mb-3">
+                      <h4 className="font-bold mb-1">{post.title}</h4>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {post.content}
+                      </p>
+                      <div className="flex gap-2 text-sm text-gray-500">
+                        <span>By: {post.author?.username || "Unknown"}</span>
+                        <span>•</span>
+                        <span>Category: {post.category?.name}</span>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+          )}
 
-        <div className="flex justify-content-between mt-6 pt-4 border-top-1 border-gray-200">
-          <Button 
-            label="Back to Home" 
-            icon="pi pi-home" 
-            className="p-button-secondary"
-            onClick={() => navigate("/")}
-          />
-          
-          <div className="flex gap-2">
-            <Button 
-              label="Reload Categories" 
-              icon="pi pi-refresh" 
-              className="p-button-outlined"
-              onClick={loadCategories}
-            />
-          </div>
-        </div>
-      </Card>
+          {/* Acciones adicionales si está logueado */}
+          {user && (
+            <div className="flex justify-content-end gap-2 mt-6 border-top-1 pt-4 border-gray-200">
+              <Button
+                label="Create Category"
+                icon="pi pi-folder-plus"
+                className="p-button-outlined"
+                onClick={handleCreateCategory}
+              />
+              <Button
+                label="Create Post"
+                icon="pi pi-plus"
+                onClick={handleCreatePost}
+                disabled={!selectedCategory}
+              />
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
