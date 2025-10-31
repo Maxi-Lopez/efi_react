@@ -1,72 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "primereact/button";
 import { ToastContainer, toast } from "react-toastify";
-import "../styles/RegisterForm.css";
+import api from "../api";
 
-export default function PostsList() {
-  const [posts, setPosts] = useState([]);
-  const [commentsVisible, setCommentsVisible] = useState({});
+export default function PostsList({ posts, user, token, initialComments }) {
+  const [showCommentInput, setShowCommentInput] = useState({});
   const [newComment, setNewComment] = useState({});
-  const [editingPost, setEditingPost] = useState(null);
-  const [editingComment, setEditingComment] = useState(null);
-
-  const userData = JSON.parse(localStorage.getItem("user"));
-  const token = userData?.access_token;
-  const userId = userData ? userData.id : null;
-  const userRole = userData ? userData.role : null;
+  const [commentsData, setCommentsData] = useState(initialComments || []);
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    if (initialComments) setCommentsData(initialComments);
+  }, [initialComments]);
 
-  const fetchPosts = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/posts");
-      const data = await res.json();
-      setPosts(data);
-    } catch (err) {
-      toast.error(`Error al cargar posts: ${err.message}`);
-    }
-  };
-
-  const toggleComments = (postId) => {
-    setCommentsVisible((prev) => ({
-      ...prev,
-      [postId]: !prev[postId],
-    }));
+  const toggleCommentInput = (postId) => {
+    setShowCommentInput((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
 
   const handleCommentChange = (postId, value) => {
-    setNewComment((prev) => ({
-      ...prev,
-      [postId]: value,
-    }));
+    setNewComment((prev) => ({ ...prev, [postId]: value }));
   };
 
-   
   const submitComment = async (postId) => {
-    if (!token) {
-      toast.error("Debes iniciar sesión para comentar");
-      return;
-    }
-
+    if (!token) return toast.error("Debes iniciar sesión para comentar");
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/posts/${postId}/comments`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ comment_text: newComment[postId] }),
-        }
-      );
-
-      if (res.ok) {
+      const res = await api.post(`/posts/${postId}/comments`, { content: newComment[postId] }, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 201 || res.status === 200) {
         toast.success("Comentario creado");
-        fetchPosts();
+        setCommentsData((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), res.data] }));
         setNewComment((prev) => ({ ...prev, [postId]: "" }));
+        setShowCommentInput((prev) => ({ ...prev, [postId]: false }));
       } else {
         toast.error("No se pudo crear el comentario");
       }
@@ -75,144 +37,68 @@ export default function PostsList() {
     }
   };
 
-   
   const deletePost = async (postId) => {
-    if (!token) return toast.error("No autorizado");
-
     try {
-      const res = await fetch(`http://localhost:5000/api/posts/${postId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        toast.success("Post eliminado");
-        fetchPosts();
-      } else {
-        toast.error("No autorizado o error al eliminar");
-      }
+      await api.delete(`/posts/${postId}`, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success("Post eliminado");
+      window.location.reload();
     } catch (err) {
-      toast.error(`Error en el servidor: ${err.message}`);
+      toast.error("No se pudo eliminar el post");
     }
   };
 
-  
-  const deleteComment = async (commentId) => {
-    if (!token) return toast.error("No autorizado");
-
+  const deleteComment = async (postId, commentId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/comments/${commentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        toast.success("Comentario eliminado");
-        fetchPosts();
-      } else {
-        toast.error("No autorizado o error al eliminar");
-      }
+      await api.delete(`/comments/${commentId}`, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success("Comentario eliminado");
+      setCommentsData((prev) => ({ ...prev, [postId]: prev[postId].filter(c => c.id !== commentId) }));
     } catch (err) {
-      toast.error(`Error en el servidor: ${err.message}`);
+      toast.error("No se pudo eliminar el comentario");
     }
   };
+
+  const canDeletePost = (post) => user && (user.role === "admin" || user.role === "moderator" || user.id === post.author_id);
+  const canDeleteComment = (comment) => user && (user.role === "admin" || user.role === "moderator" || user.id === comment.author_id);
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div style={{ marginTop: "1rem" }}>
       <ToastContainer />
-      <h2>Posts</h2>
-      {posts.length === 0 ? (
-        <p>No hay posts disponibles</p>
-      ) : (
-        posts.map((post) => (
-          <div
-            key={post.id}
-            style={{
-              border: "1px solid #ccc",
-              marginBottom: "1rem",
-              padding: "1rem",
-              borderRadius: "8px",
-            }}
-          >
-            <h3>{post.title}</h3>
-            <p>{post.content}</p>
-            <p>
-              <strong>Autor:</strong> {post.author?.name || "Anónimo"}
-            </p>
+      {posts.length === 0 ? <p>No hay posts en esta categoría</p> : posts.map((post) => (
+        <div key={post.id} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem", borderRadius: "8px" }}>
+          <h3>{post.title}</h3>
+          <p>{post.content}</p>
+          <p>
+            <strong>Autor:</strong> {post.author?.name || "Anónimo"}{" "}
+            {post.category?.name && ` | Categoría: ${post.category.name}`}
+          </p>
 
-            {/* Botones editar/eliminar post */}
-            {(userRole === "admin" || post.author?.id === userId) && (
-              <div style={{ marginBottom: "0.5rem" }}>
-                <Button
-                  label="Eliminar Post"
-                  className="p-button-danger p-button-sm"
-                  onClick={() => deletePost(post.id)}
-                />
-              </div>
-            )}
+          {user && (
+            <Button label="Agregar comentario" className="p-button-secondary p-button-sm" onClick={() => toggleCommentInput(post.id)} />
+          )}
 
-            <Button
-              size="small"
-              label={
-                commentsVisible[post.id] ? "Ocultar Comentarios" : "Ver Comentarios"
-              }
-              onClick={() => toggleComments(post.id)}
-              className="p-button-secondary"
-            />
+          {showCommentInput[post.id] && (
+            <div style={{ marginTop: "0.5rem" }}>
+              <input type="text" placeholder="Escribe un comentario..." value={newComment[post.id] || ""} onChange={(e) => handleCommentChange(post.id, e.target.value)} />
+              <Button label="Comentar" className="p-button-success" onClick={() => submitComment(post.id)} />
+            </div>
+          )}
 
-            {commentsVisible[post.id] && (
-              <div style={{ marginTop: "1rem" }}>
-                <h4>Comentarios</h4>
-                {post.comments.length === 0 ? (
-                  <p>No hay comentarios aún</p>
-                ) : (
-                  post.comments.map((c) => (
-                    <div
-                      key={c.id}
-                      style={{
-                        borderTop: "1px dashed #ccc",
-                        paddingTop: "0.5rem",
-                        marginTop: "0.5rem",
-                      }}
-                    >
-                      <p>{c.comentario}</p>
-                      <p>
-                        <strong>Autor:</strong> {c.author?.name || "Anónimo"}
-                      </p>
+          {commentsData[post.id] && commentsData[post.id].length > 0 && (
+            <div style={{ marginTop: "1rem" }}>
+              <h4>Comentarios</h4>
+              {commentsData[post.id].map((c) => (
+                <div key={c.id} style={{ borderTop: "1px dashed #ccc", paddingTop: "0.5rem", marginTop: "0.5rem" }}>
+                  <p>{c.content}</p>
+                  <p><strong>Autor:</strong> {c.author?.name || "Anónimo"}</p>
+                  {canDeleteComment(c) && <Button label="Eliminar comentario" className="p-button-danger p-button-text" onClick={() => deleteComment(post.id, c.id)} />}
+                </div>
+              ))}
+            </div>
+          )}
 
-                      {/* Botón eliminar comentario */}
-                      {(userRole === "admin" ||
-                        userRole === "moderator" ||
-                        c.author?.id === userId) && (
-                        <Button
-                          label="Eliminar Comentario"
-                          className="p-button-danger p-button-sm"
-                          onClick={() => deleteComment(c.id)}
-                        />
-                      )}
-                    </div>
-                  ))
-                )}
-
-                {/* Input para nuevo comentario */}
-                {token && (
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <input
-                      type="text"
-                      placeholder="Escribe un comentario..."
-                      value={newComment[post.id] || ""}
-                      onChange={(e) => handleCommentChange(post.id, e.target.value)}
-                    />
-                    <Button
-                      label="Comentar"
-                      className="p-button-success"
-                      onClick={() => submitComment(post.id)}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))
-      )}
+          {canDeletePost(post) && <Button label="Eliminar post" className="p-button-danger p-button-text" onClick={() => deletePost(post.id)} />}
+        </div>
+      ))}
     </div>
   );
 }

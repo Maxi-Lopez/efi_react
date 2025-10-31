@@ -1,4 +1,3 @@
-// src/components/LoginForm.jsx
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import * as Yup from 'yup'
 import { Button } from 'primereact/button'
@@ -21,20 +20,27 @@ export default function LoginForm() {
             const data = await api.post('/login', {
                 email: values.email,
                 password: values.password
-            })
+            });
 
             const token = data.access_token || data.token;
-            localStorage.setItem('token', token);
-            
-            toast.success("Login successful")
-            resetForm()
-            
-            setTimeout(() => navigate('/dashboard'), 1500)
-            
+            const user = data.user || null;
+
+            if (token) {
+                localStorage.setItem('token', token);
+            }
+            if (user) {
+                localStorage.setItem('user', JSON.stringify(user));
+            }
+
+            toast.success("Login successful");
+            resetForm();
+
+            setTimeout(() => navigate('/dashboard'), 1500);
         } catch (error) {
-            toast.error(`Error logging in: ${error.message}`)
+            toast.error(`Error logging in: ${error.message}`);
         }
-    }
+    };
+
 
     return (
         <div className='register-container'>
